@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: read
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start API
+        run: docker compose up --build -d --wait todo-api
+
+      - name: Run api tests (Maven in container)
+        run: docker compose run --rm api-tests
+
+      - name: Publish api test results
+        if: (!cancelled())
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: api-test/target/surefire-reports/**/TEST-*.xml
+          check_name: API test results
+
+      - name: Upload Maven test output
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: maven-api-test-target
+          path: api-test/target
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v
+
+  browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start Selenium
+        run: docker compose up -d --wait selenium
+
+      - name: Run browser tests (Maven in container)
+        run: docker compose run --rm browser-tests
+
+      - name: Publish browser test results
+        if: (!cancelled())
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: browser-test/target/surefire-reports/**/TEST-*.xml
+          check_name: Browser test results
+
+      - name: Upload browser Maven output
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: maven-browser-test-target
+          path: browser-test/target
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v

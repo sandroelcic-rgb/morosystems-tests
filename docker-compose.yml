@@ -1,0 +1,60 @@
+services:
+  todo-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/v3/api-docs').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  api-tests:
+    image: maven:3.9.9-eclipse-temurin-21
+    depends_on:
+      todo-api:
+        condition: service_healthy
+    working_dir: /work/api-test
+    volumes:
+      - .:/work
+      - maven-repo:/root/.m2
+    command: ["mvn", "-B", "test"]
+
+  selenium:
+    image: selenium/standalone-chromium:4.27.0
+    shm_size: "2gb"
+    environment:
+      SE_VNC_PASSWORD: pass
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:4444/status || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  browser-tests:
+    image: maven:3.9.9-eclipse-temurin-21
+    depends_on:
+      selenium:
+        condition: service_healthy
+    working_dir: /work/browser-test
+    volumes:
+      - .:/work
+      - maven-browser-repo:/root/.m2
+    command: ["mvn", "-B", "test"]
+
+volumes:
+  maven-repo:
+  maven-browser-repo:

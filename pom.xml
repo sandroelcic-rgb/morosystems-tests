@@ -1,0 +1,17 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>iac.github</groupId>
+    <artifactId>moro-test-root</artifactId>
+    <version>0.0.1</version>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>api-test</module>
+        <module>browser-test</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+</project>
